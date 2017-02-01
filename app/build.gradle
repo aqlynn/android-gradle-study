@@ -1,0 +1,197 @@
+// 表示的是添加插件，其是可以理解为该 module 为一个 com.android.application 程序，也就是应用程序
+// 如果你的 Model 是一个库(makepowerutils)，那么自然也就是：apply plugin: 'com.android.library'
+apply plugin: 'com.android.application'
+
+//android{...} 中配置了所有android构建的参数，这里也就是Android DSL的入口点。
+android {
+    // 编译SDK的版本，需要本地事先通过SDK安卓
+    compileSdkVersion 24
+    // build tools的版本,需要本地事先通过SDK安卓
+    //很多人导入新的第三方库，失败的原因之一是build version的版本不对，这个可以手动更改成你本地已有的版本或者打开 SDK Manager 去下载对应版本。
+    buildToolsVersion "24.0.3"
+
+    //这个自然就是默认配置了，既然是默认配置那么久相当于公共配置，也就是说这里边配置的下面的 buildTypes 中也将自动继承了。
+    //在这个中可以放入很多的控制，如下面 buildTypes/release 中的配置你也可以放到其中：
+    defaultConfig {
+        // 应用的包名
+        applicationId "com.makepower.lockmanagement"
+        //最小的SDK版本为 15，
+        minSdkVersion 15
+        // 目标版本为：23 也就是说其中的代码你使用的全是API21中的 Android。
+        targetSdkVersion 23
+        //当前的版本代码
+        versionCode 1
+        //版本名称
+        versionName "1.0"
+    }
+
+    //修改生成的最终文件名
+    applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            def outputFile = output.outputFile
+            if (outputFile != null && outputFile.name.endsWith('.apk')) {
+                File outputDirectory = new File(outputFile.parent);
+                def fileName
+                if (variant.buildType.name == "release") {
+                    fileName = "SmartLock_${variant.productFlavors[0].name}_release.apk"
+                } else {
+                    fileName = "SmartLock_${variant.productFlavors[0].name}_beta.apk"
+                }
+                output.outputFile = new File(outputDirectory, fileName)
+            }
+        }
+    }
+
+    //编译类型，release,debug
+    buildTypes {
+        release {
+            // 是否进行混淆
+            //applicationIdSuffix '.release'
+            //versionNameSuffix "-release"
+            minifyEnabled true
+            // 混淆文件的位置
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            //去除没有用到的资源文件了,依赖于minifyEnabled=true
+            shrinkResources true
+            zipAlignEnabled true    //混淆后的zip优化，默认为true，可不写。当不显示配置为true时，不会生成unaligned.apk
+//            signingConfig signingConfigs.release
+        }
+        debug {
+            //   buildConfigField "String", "URL_DOMAIN", '"172.16.4.254"'
+            //   buildConfigField "String", "URL_PORT", '"8080"'
+            debuggable true  //启用debug的buildType配置
+        }
+    }
+
+    //签名设置
+    signingConfigs {
+        //默认使用 SDK 中的 debug.keystore 为 debug 分支进行签名
+        debug {
+        }
+
+        // 签名文件app/keystore
+        release {
+            storeFile file('keystore')
+            storePassword 'helloworld'
+            keyAlias 'Android Release Key'
+            keyPassword 'helloworld'
+        }
+
+    }
+
+// Java 的版本配置，以便使用对应版本的一些新特性
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+
+    // 很多从 Eclipse 中迁移过来的代码，大部分中都将带有这个设置，因为 Eclipse的文件夹与 AS 不尽相同，所以需要手动指定。
+    //// 如果你的工程是从ANT 中迁移过来，可以使用sourceSets 来配置工程结构，如果你使用的是标准Gradle 结构，可以不需要配置。
+
+    //Android默认配置
+    sourceSets {
+        main {
+         /*   manifest.srcFile 'AndroidManifest.xml'
+            java.srcDirs = ['src']
+            resources.srcDirs = ['src']
+            aidl.srcDirs = ['src']
+            renderscript.srcDirs = ['src']
+            res.srcDirs = ['res']
+            assets.srcDirs = ['assets']*/
+        }
+        DaHua {
+
+        }
+
+
+
+    }
+
+    //多渠道方式一，不用创建各渠道对应的文件夹
+    //关于多渠道，其实就是定义了多个flavor。用manifestPlaceholders配置，替换manifest中的占位符${}。
+    //不同渠道不同APP名字  用android:label="${app_name}代替android:label="@string/app_name"，$可理解为变量，变量key为app_name
+    //不同渠道不同风格 android:theme="${app_theme}"
+    //不同渠道不同Logo android:src="${app_logo}"
+    //不同渠道不同启动界面 activity android:name="${app_start_activity_path}"
+    /* <meta-data
+     android:name="channelName"
+     android:value="${channelID}" />*/
+/*    productFlavors {
+        ChuangLi {
+            applicationId = "com.chuangli.lock"
+            manifestPlaceholders = [
+                    app_name               : "chuangli",
+                    //我们也可以指定一个默认的app_name，如果需要的话。指定默认的值是在defaultConfig节点当中添加如下代码
+                    //manifestPlaceholders = [ app_name:"Unspecified"]
+                    app_start_activity_path: "makepower.lock.acticity.chuangli",
+                    app_theme              : "@style/app_theme_chuangli",
+                    app_logo               : "@drawable/app_logo_chuangli",
+                    channelID              : "百度应用平台"
+            ]
+        }
+        DaHua {
+            manifestPlaceholders = [app_name: "dahuang"]
+        }
+        TongYong {
+            manifestPlaceholders = [app_name: "dahuang"]
+        }
+    }
+
+    //后来发现上面的重复代码太多，就在网上又发现了一个更简洁的写法
+    //其中name的值对相对应各个productFlavors的选项值，这样就达到自动替换渠道值的目的了。
+    productFlavors.all { flavor ->
+        flavor.manifestPlaceholders = [channelID: name]
+    }*/
+
+
+    //多渠道方式二，创建各渠道对应的文件夹，在app/src下面
+    //每一个 module/src 都有一个名称为 main 的文件夹。
+    // 这个文件夹属于 buildTypes 和 productFlavors 基础， buildTypes 和 productFlavors 都可以访问和修改 main 文件夹中的内容。
+    // 分别创建和main同级目录的文件夹ChuangLi, DaHua, TongYong
+
+    //合并规则：
+    //图片、音频、 XML 类型的 Drawable 等资源文件，将会进行文件级的覆盖（本例中的 ic_launcher.png）。
+   // 字符串、颜色值、整型等资源以及 AndroidManifest.xml ，将会进行元素级的覆盖（本例中的 appname 、 hello_world）。
+   // 代码资源，同一个类， buildTypes 、 productFlavors 、 main 中只能存在一次，否则会有类重复的错误
+    // （这就是为什么本例中没有在 main 中定义 ProductFlavorsUtils 类）。
+
+  // 覆盖等级为：buildTypes > productFlavors > main
+
+    //当你在 Android Studio 的 Build Variants 面板中切换当前选择的 Build Variants
+    // 你会发现在 Project 面板中，对应的两个文件夹的 java 和 res 文件夹的图标会发生变化（显示为资源文件夹图标的样式）
+    // 而 main 文件夹中的这两个文件夹一直表现为资源文件夹图标的样式。
+    productFlavors {
+        ChuangLi {
+        }
+        DaHua {
+        }
+        TongYong {
+        }
+    }
+
+
+
+    //程序在buid的时候，会执行lint检查，有任何的错误或者警告提示，都会终止构建，我们可以将其关掉。
+    lintOptions {
+        abortOnError false
+    }
+
+
+}
+
+
+//这个也就是所谓的依赖了，在这里不光可以进行远程依赖，也可以本地依赖
+dependencies {
+    // 编译libs目录下的所有jar包 也就是本地jar包
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    /*compile files('libs/helloMakePower.jar')//libs目录下的helloMakePower*/
+    // 依赖的是一个 model ，一个project中可以有多个 model ，这句话的意思也就是依赖一个本项目中 名称为 makepowerutils 的 model 库
+    compile project(':makepowerutils')
+
+    //依赖一个远程的库
+    compile 'com.android.support:appcompat-v7:24.3.0'
+
+    testCompile 'junit:junit:4.12'
+
+
+}

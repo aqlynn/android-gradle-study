@@ -1,0 +1,28 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+//用于设置驱动构建过程的代码
+buildscript {
+    //需要从jcenter库得到gradle的android插件
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        //声明了使用 Android Studio gradle 插件版本。一般升级AS或者导入从Eclipse中生成的项目时需要修改下面gradle版本。
+        classpath 'com.android.tools.build:gradle:2.1.0'
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+    //以上联合起来也就是，依赖 jcenter() 服务中的 gradle 库，其包名是：“com.android.tools.build” ，版本是：2.1.0 版本。
+}
+
+//设置每一个 module 的构建过程。设置了每一个 module 使用 声明使用 maven 仓库
+//表示依赖从 Bintary’s JCenter Maven 仓库中获取
+allprojects {
+    repositories {
+        //可以添加其他仓库，多个之间不干扰a
+        jcenter()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
